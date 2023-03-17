@@ -1,0 +1,57 @@
+kind: Namespace  
+apiVersion: v1  
+metadata:  
+  name: k8j
+  labels:  
+    name: k8j
+spec:
+  finalizers:
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-launcher
+  namespace: k8j
+  labels:
+    app: demo-launcher
+spec:
+  selector:
+    matchLabels:
+      app: demo-launcher
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: demo-launcher
+    spec:
+      containers:
+      - name: agent
+        image: radbrt/k8sjob:latest
+        imagePullPolicy: "Always"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: k8j
+  name: demo-launcher
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "pods/status"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: [ "get", "list", "watch", "create", "update", "patch", "delete" ]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: demo-launcher-role-binding
+  namespace: k8j
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: k8j
+roleRef:
+  kind: Role
+  name: demo-launcher
+  apiGroup: rbac.authorization.k8s.io
